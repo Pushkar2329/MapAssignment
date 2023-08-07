@@ -1,0 +1,248 @@
+<!-- 
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Real-Time Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
+  <style>
+    #map {
+      height: 600px;
+    }
+  </style>
+</head>
+<body>
+   <button id = 'play' > Play </button>
+   <button id = 'pause'> Pause </button>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    
+    
+    const socket = io();
+    const imageIconUrl = 'https://img.icons8.com/?size=512&id=Fb20iukVU1As&format=png';
+    let customIcon = {
+      iconUrl:imageIconUrl,
+      iconSize:[40,40]
+        }
+      let myIcon = L.icon(customIcon);
+      let iconOptions = {
+      icon:myIcon
+      }
+    const map = L.map('map').setView([18.985641666666666,74.57622666666667], 12); // Adjust initial map center and zoom level
+    const marker = L.marker([18.985641666666666,74.57622666666667],iconOptions).addTo(map)
+    var line = [];
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    
+    const playButton = document.getElementById('play');
+    const pauseButton = document.getElementById('pause');
+    
+
+    
+    socket.on('data',(data)=> {
+      const { latitude, longitude, direction } = data;
+      line.push([latitude, longitude])
+      
+    //   L.marker().setLatLng([latitude, longitude]).bindPopup('Timestamp: ' + data.timestamp).openPopup();
+      marker.setLatLng([latitude, longitude], {icon : customIcon}).bindPopup('Timestamp: ' + data.timestamp).openPopup();
+      marker.setRotationAngle(radiansToDegrees(direction))
+      map.setView([latitude, longitude])
+      L.polyline([line], {color:'blue'}).addTo(map)
+    })
+    
+    function toggleButtons(playState) {
+    
+    if (playState) {
+      playButton.style.pointerEvents = 'none'; // Disable play button
+     pauseButton.style.pointerEvents = 'auto'; // Enable pause button
+   } else {
+      playButton.style.pointerEvents = 'auto'; // Enable play button
+      pauseButton.style.pointerEvents = 'none'; // Disable pause button
+    }
+  }
+
+  function radiansToDegrees(radians) {
+  return radians * (180 / Math.PI);
+}
+
+  function createIcon(iconUrl, direction) {
+      const iconWidth = 32;
+      const iconHeight = 32;
+      const iconOptions = {
+        iconUrl: iconUrl,
+        iconSize: [iconWidth, iconHeight],
+        iconAnchor: [iconWidth / 2, iconHeight / 2], // Center the icon on the marker's position
+      };
+
+      if (direction !== null) {
+        iconOptions.iconRotate = direction; // Set the rotation angle of the icon
+      }
+
+      return L.icon(iconOptions);
+    }
+
+    // Extend the L.Marker class to include a setRotationAngle method
+    L.Marker.include({
+      setRotationAngle: function (angle) {
+        if (this._icon) {
+          this._icon.style.transform = `rotate(${angle}deg)`;
+        }
+        this._rotationAngle = angle;
+      },
+
+      getRotationAngle: function () {
+        return this._rotationAngle;
+      }})
+
+  socket.on('connection', () => {
+    console.log('Client connected');
+    toggleButtons(false); // Enable play button on connection
+  });
+
+  // Event listeners for play and pause buttons
+  playButton.addEventListener('click', () => {
+    socket.emit('play');
+    toggleButtons(true); // Disable play button on play
+  });
+
+  pauseButton.addEventListener('click', () => {
+    socket.emit('pause');
+    toggleButtons(false); // Enable play button on pause
+  });
+
+    socket.on('disconnect', () => {
+    console.log('Disconnected from server');
+    toggleButtons(false); // Enable play button on disconnect
+  });
+  </script>
+</body>
+</html> -->
+<!-- index.html -->
+<!-- index.html -->
+<!-- index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Real-Time Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
+  <style>
+    #map {
+      height: 600px;
+    }
+
+    /* Custom icon style */
+    .custom-icon {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 24px;
+      height: 24px;
+      background-color: transparent;
+      border: none;
+      transform-origin: center;
+    }
+
+    /* Rotated image */
+    .custom-icon img {
+      transform: rotate(0deg);
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <button id="play">Play</button>
+  <button id="pause">Pause</button>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const map = L.map('map').setView([18.985641666666666, 74.57622666666667], 12); // Adjust initial map center and zoom level
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    const playButton = document.getElementById('play');
+    const pauseButton = document.getElementById('pause');
+
+    let marker;
+    let line = [];
+
+    function createCustomIcon(iconUrl, direction) {
+      const iconOptions = {
+        iconUrl: iconUrl,
+        iconSize: [24, 24], // Adjust the icon size here
+        iconAnchor: [12, 12], // Center the icon on the marker
+        popupAnchor: [0, -12], // Adjust the popup position if needed
+      };
+
+      if (direction !== null) {
+        // Set the rotation angle of the icon
+        iconOptions.html = `<div class="custom-icon" style="transform: rotate(${direction}deg);">
+                              <img src="${iconUrl}" alt="Icon" class="icon-img" />
+                            </div>`;
+      }
+
+      return L.divIcon(iconOptions);
+    }
+
+    socket.on('data', (data) => {
+      const { latitude, longitude, direction } = data;
+      line.push([latitude, longitude]);
+
+      if (!marker) {
+        // Create the marker if it doesn't exist
+        marker = L.marker([latitude, longitude], { icon: createCustomIcon('https://img.icons8.com/?size=512&id=Fb20iukVU1As&format=png', direction+270) }).addTo(map);
+      } else {
+        // Update the marker's position and icon
+        marker.setLatLng([latitude, longitude]);
+        marker.setIcon(createCustomIcon('https://img.icons8.com/?size=512&id=Fb20iukVU1As&format=png', direction+270));
+      }
+
+      marker.bindPopup('Timestamp: ' + data.timestamp).openPopup();
+      map.setView([latitude, longitude]);
+      L.polyline(line, { color: 'blue' }).addTo(map);
+    });
+
+    function toggleButtons(playState) {
+      if (playState) {
+        playButton.style.pointerEvents = 'none'; // Disable play button
+        pauseButton.style.pointerEvents = 'auto'; // Enable pause button
+      } else {
+        playButton.style.pointerEvents = 'auto'; // Enable play button
+        pauseButton.style.pointerEvents = 'none'; // Disable pause button
+      }
+    }
+
+    socket.on('connection', () => {
+      console.log('Client connected');
+      toggleButtons(false); // Enable play button on connection
+    });
+
+    // Event listeners for play and pause buttons
+    playButton.addEventListener('click', () => {
+      socket.emit('play');
+      toggleButtons(true); // Disable play button on play
+    });
+
+    pauseButton.addEventListener('click', () => {
+      socket.emit('pause');
+      toggleButtons(false); // Enable play button on pause
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Disconnected from server');
+      toggleButtons(false); // Enable play button on disconnect
+    });
+  </script>
+</body>
+</html>
